@@ -1,6 +1,7 @@
 import User from './../models/user.js';
 import jwt from 'jsonwebtoken'
 import bcrypt from 'bcryptjs';
+import Chat from '../models/Chat.js';
 
 //Generate JWT
 const generateToken = (id) =>{
@@ -17,15 +18,15 @@ export const registerUser = async (req, res) => {
         const userExists = await User.findOne({email})
 
         if(userExists){
-            return res.json({sucess: false, message: 'User already exists'})
+            return res.json({success: false, message: 'User already exists'})
         }
 
         const user = await User.create({name, email, password})
 
         const token = generateToken(user._id)
-        res.json({sucess: true, token})
+        res.json({success: true, token})
     } catch(error){
-         return res.json({sucess: false, messgae: error.message})
+         return res.json({success: false, messgae: error.message})
     }
 }
 
@@ -39,12 +40,12 @@ export const loginUser =async (req, res) => {
             
             if(isMatch){
                 const token = generateToken(user.id)
-                return res.json({sucess: true, token})
+                return res.json({success: true, token})
             }
         }
-        return res.json({sucess: false, message: 'Invalid email or passwprd'})
+        return res.json({success: false, message: 'Invalid email or passwprd'})
     }catch(error){
-        return res.json({sucess: false, messgae: error.message})
+        return res.json({success: false, message: error.message})
     }
 }
 
@@ -52,9 +53,9 @@ export const loginUser =async (req, res) => {
 export const getUser = async (req, res) => {
     try {
         const user = req.user
-        return res.json({sucess: true, user})
+        return res.json({success: true, user})
     } catch (error){
-        return res.json({sucess: false, messgae: error.message})
+        return res.json({success: false, messgae: error.message})
     }
 }
 
@@ -73,8 +74,8 @@ export const getPublishedImages = async (req, res) => {
             {
                 $project:{
                     _id: 0,
-                    imageUrl: 'messages.content',
-                    userName: 'userName'
+                    imageUrl: '$messages.content',
+                    userName: '$userName'
                 }
             }
         ])

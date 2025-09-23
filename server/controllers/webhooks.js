@@ -2,14 +2,14 @@ import Stripe from 'stripe'
 import Transaction from '../models/Transaction.js';
 import User from '../models/user.js';
 
-export const stripeWebhooks = async(request, response)=>{
+export const stripeWebhooks = async (request, response) => {
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
     const sig = request.headers['stripe-signature']
 
     let event
 
     try {
-        event = stripe.webhooks.constructEvent(request.body, sig, process.env.STRIPE_WEBHOOK_KEY)
+        event = stripe.webhooks.constructEvent(request.body, sig, process.env.STRIPE_WEBHOOK_SECRET)
 
     } catch (error) {
         return response.status(400).send(`Webhook Error: ${error.message} `)
@@ -17,38 +17,40 @@ export const stripeWebhooks = async(request, response)=>{
 
     try {
         switch (event.type) {
-            case 'payment_intent.succeeded': {
-                const payment_intent = event.data.object
+            case "payment_intent.succeeded": {
+                const paymentIntent = event.data.object
                 const sessionList = await stripe.checkout.sessions.list({
                     payment_intent: paymentIntent.id,
                 })
 
                 const session = sessionList.data[0]
-                const {transactionId, appId}= session.metadata
+                const { transactionId, appId } = session.metadata
 
-                if(appId === 'quickgpt'){
-                    const transaction = await Transaction.findOne({_id:
-                        transactionId, isPaid:false})
+                if (appId === 'quickgpt') {
+                    const transactions = await Transaction.findOne({
+                        _id:
+                            transactionId, isPaid: false
+                    })
 
-                        //Update credits iin user account
-                        await User.updateOne({_id: transaction.userId},{$inc:{credits: transaction.credits}})
+                    //Update credits iin user account
+                    await User.updateOne({ _id: transactions.userId }, { $inc: { credits: transactions.credits } })
 
-                        //Update credit payment status
-                        transaction.isPaid = true
-                        await transaction.save()
-                }else{
-                    return response.json({received: true, message:'Ignored event: Invalid app'})
-                }break;
+                    //Update credit payment status
+                    transactions.isPaid = true
+                    await transactions.save()
+                } else {
+                    return response.json({ received: true, message: 'Ignored event: Invalid app' })
+                } break;
             }
-                
-             default:
+
+            default:
                 console.log('Unhandled event type:', event.type)
                 break;
         }
-        response.json({received: true})
+        response.json({ received: true })
     } catch (error) {
         console.error('Webhook processing error:', error)
-        
+
         response.status(500).send('Internal Server Error')
     }
 }
