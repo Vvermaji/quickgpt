@@ -19,7 +19,7 @@ export const AppContextProvider = ({ children }) => {
 
     const fetchUser = async () => {
         try {
-        const {data} = await axios.get('/api/user/data',{headers: {Authorization:token}})
+        const {data} = await axios.get('https://server-1p81.onrender.com/',{headers: {Authorization:token}})
         if(data.success){
             setUser(data.user)
         }else{
